@@ -5,6 +5,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "e2e": "playwright test",
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -17,10 +18,12 @@
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/preact": "^3.2.4",
     "@testing-library/user-event": "^14.6.1",
+    "@playwright/test": "^1.54.2",
     "@types/node": "^24.2.1",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.2",
     "vite": "^7.1.2",
+    "vite-plugin-pwa": "^1.0.3",
     "vitest": "^3.2.4"
   }
 }
