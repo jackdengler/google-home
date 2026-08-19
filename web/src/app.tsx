@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { ModeSelector } from "./components/ModeSelector.js";
 import { StatusPanel } from "./components/StatusPanel.js";
 import { ThermostatDial } from "./components/ThermostatDial.js";
+import { FanControl } from "./components/FanControl.js";
 import { createThermostatController, type ControllerSnapshot, type ThermostatCommands, type ThermostatState } from "./thermostat.js";
 
 interface AppApi extends ThermostatCommands { unlock(code: string): Promise<void>; signOut(): void; getState(): Promise<ThermostatState> }
@@ -11,6 +12,8 @@ export function App({ api, initiallyUnlocked }: { api: AppApi; initiallyUnlocked
   const [state, setState] = useState<ThermostatState | null>(null);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [loading, setLoading] = useState(initiallyUnlocked);
+  const [fanMinutes, setFanMinutes] = useState(15);
+  const [fanBusy, setFanBusy] = useState(false);
   const controller = useMemo(() => state ? createThermostatController(api, state) : null, [api, state?.observedAt]);
   const [snapshot, setSnapshot] = useState<ControllerSnapshot | null>(null);
 
@@ -27,6 +30,7 @@ export function App({ api, initiallyUnlocked }: { api: AppApi; initiallyUnlocked
     <StatusPanel value={snapshot} />
     <ThermostatDial target={snapshot.draftTarget} ambient={snapshot.confirmed.ambientTemperature} scale={snapshot.confirmed.scale} pending={snapshot.pending} disabled={!snapshot.confirmed.online} onAdjust={(amount) => controller.adjust(amount)} />
     <ModeSelector mode={snapshot.confirmed.mode} available={snapshot.confirmed.availableModes} disabled={snapshot.pending || !snapshot.confirmed.online} onSelect={(mode) => void controller.setMode(mode)} />
+    {snapshot.confirmed.fanAvailable && <FanControl active={snapshot.confirmed.fanTimerMode === "ON"} timeout={snapshot.confirmed.fanTimerTimeout} minutes={fanMinutes} busy={fanBusy} onMinutes={setFanMinutes} onStart={() => { setFanBusy(true); api.setFan(fanMinutes).then(setState).catch((error) => setUnlockError(error instanceof Error ? error.message : "The fan did not start.")).finally(() => setFanBusy(false)); }} onStop={() => { setFanBusy(true); api.setFan(0).then(setState).catch((error) => setUnlockError(error instanceof Error ? error.message : "The fan did not stop.")).finally(() => setFanBusy(false)); }} />}
     <footer>Last confirmed {new Date(snapshot.confirmed.observedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</footer>
   </main>;
 }

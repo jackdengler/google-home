@@ -35,6 +35,11 @@ export class ThermostatApi implements ThermostatCommands {
     return result.state;
   }
 
+  async setFan(minutes: number): Promise<ThermostatState> {
+    const result = await this.request<{ state: ThermostatState }>("/v1/thermostat/fan", { method: "POST", body: JSON.stringify({ minutes }) });
+    return result.state;
+  }
+
   private async request<T>(path: string, init: RequestInit = {}, authenticated = true): Promise<T> {
     if (!this.baseUrl) throw new ApiError("SETUP_REQUIRED", "The private Google Cloud bridge has not been configured yet.");
     const headers = new Headers(init.headers); headers.set("content-type", "application/json");

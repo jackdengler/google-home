@@ -14,6 +14,7 @@ const device: SdmDevice = {
     "sdm.devices.traits.ThermostatMode": { mode: "HEAT", availableModes: ["OFF", "HEAT", "COOL"] },
     "sdm.devices.traits.ThermostatTemperatureSetpoint": { heatCelsius: 22.2222222222 },
     "sdm.devices.traits.ThermostatHvac": { status: "HEATING" },
+    "sdm.devices.traits.Fan": { timerMode: "OFF" },
   },
 };
 
@@ -75,5 +76,17 @@ describe("thermostat HTTP API", () => {
     expect(response.status).toBe(422);
     expect(response.body.error.code).toBe("UNSAFE_TEMPERATURE");
     expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("runs and stops the fan using validated 15-minute intervals", async () => {
+    const token = await unlock();
+    await request(app).post("/v1/thermostat/fan").set("Authorization", `Bearer ${token}`).send({ minutes: 45 }).expect(200);
+    await request(app).post("/v1/thermostat/fan").set("Authorization", `Bearer ${token}`).send({ minutes: 0 }).expect(200);
+    const invalid = await request(app).post("/v1/thermostat/fan").set("Authorization", `Bearer ${token}`).send({ minutes: 20 });
+    expect(invalid.status).toBe(422);
+    expect(execute.mock.calls.map(([command]) => command)).toEqual([
+      { command: "sdm.devices.commands.Fan.SetTimer", params: { timerMode: "ON", duration: "2700s" } },
+      { command: "sdm.devices.commands.Fan.SetTimer", params: { timerMode: "OFF" } },
+    ]);
   });
 });

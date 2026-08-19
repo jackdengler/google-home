@@ -23,6 +23,9 @@ export interface ThermostatState {
   ecoMode: string | null;
   availableModes: ThermostatMode[];
   scale: TemperatureScale;
+  fanAvailable: boolean;
+  fanTimerMode: "ON" | "OFF" | null;
+  fanTimerTimeout: string | null;
 }
 
 export interface SdmCommand {
@@ -51,6 +54,14 @@ export function createModeCommand(mode: ThermostatMode): SdmCommand {
     command: "sdm.devices.commands.ThermostatMode.SetMode",
     params: { mode },
   };
+}
+
+export function createFanTimerCommand(minutes: number): SdmCommand {
+  if (minutes === 0) return { command: "sdm.devices.commands.Fan.SetTimer", params: { timerMode: "OFF" } };
+  if (!Number.isInteger(minutes) || minutes < 15 || minutes > 720 || minutes % 15 !== 0) {
+    throw new DomainError("INVALID_FAN_DURATION", "Fan duration must use 15-minute intervals between 15 minutes and 12 hours.");
+  }
+  return { command: "sdm.devices.commands.Fan.SetTimer", params: { timerMode: "ON", duration: `${minutes * 60}s` } };
 }
 
 type SetpointRequest = { target: number } | { heat: number; cool: number };
@@ -107,6 +118,8 @@ export function normalizeDevice(device: SdmDevice, scale: TemperatureScale, now 
   const cool = numberTrait(traits, "sdm.devices.traits.ThermostatTemperatureSetpoint", "coolCelsius");
   const humidity = numberTrait(traits, "sdm.devices.traits.Humidity", "ambientHumidityPercent");
   const hvac = stringTrait(traits, "sdm.devices.traits.ThermostatHvac", "status");
+  const fan = traits["sdm.devices.traits.Fan"];
+  const fanMode = stringTrait(traits, "sdm.devices.traits.Fan", "timerMode");
   return {
     observedAt: now.toISOString(),
     name: stringTrait(traits, "sdm.devices.traits.Info", "customName") ?? "Nest Thermostat",
@@ -121,5 +134,8 @@ export function normalizeDevice(device: SdmDevice, scale: TemperatureScale, now 
     ecoMode: stringTrait(traits, "sdm.devices.traits.ThermostatEco", "mode"),
     availableModes,
     scale,
+    fanAvailable: Boolean(fan),
+    fanTimerMode: fanMode === "ON" || fanMode === "OFF" ? fanMode : null,
+    fanTimerTimeout: stringTrait(traits, "sdm.devices.traits.Fan", "timerTimeout"),
   };
 }

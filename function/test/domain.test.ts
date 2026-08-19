@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DomainError,
   createModeCommand,
+  createFanTimerCommand,
   createSetpointCommand,
   fromCelsius,
   normalizeDevice,
@@ -39,6 +40,12 @@ describe("commands", () => {
       params: { mode: "COOL" },
     });
   });
+
+  it("creates 15-minute fan timer commands and supports stopping", () => {
+    expect(createFanTimerCommand(45)).toEqual({ command: "sdm.devices.commands.Fan.SetTimer", params: { timerMode: "ON", duration: "2700s" } });
+    expect(createFanTimerCommand(0)).toEqual({ command: "sdm.devices.commands.Fan.SetTimer", params: { timerMode: "OFF" } });
+    expect(() => createFanTimerCommand(20)).toThrowError(/15-minute/);
+  });
 });
 
 describe("device normalization", () => {
@@ -53,6 +60,7 @@ describe("device normalization", () => {
         "sdm.devices.traits.ThermostatMode": { mode: "HEAT", availableModes: ["OFF", "HEAT"] },
         "sdm.devices.traits.ThermostatTemperatureSetpoint": { heatCelsius: 22.2222222222 },
         "sdm.devices.traits.ThermostatHvac": { status: "HEATING" },
+        "sdm.devices.traits.Fan": { timerMode: "ON", timerTimeout: "2026-08-18T12:45:00Z" },
       },
     }, "F", new Date("2026-08-18T12:00:00Z"));
 
@@ -67,6 +75,9 @@ describe("device normalization", () => {
       mode: "HEAT",
       hvacStatus: "HEATING",
       availableModes: ["OFF", "HEAT"],
+      fanAvailable: true,
+      fanTimerMode: "ON",
+      fanTimerTimeout: "2026-08-18T12:45:00Z",
       scale: "F",
     });
   });

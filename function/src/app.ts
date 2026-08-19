@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
-import { createModeCommand, createSetpointCommand, DomainError, normalizeDevice, type SdmCommand, type SdmDevice, type TemperatureScale } from "./domain.js";
+import { createFanTimerCommand, createModeCommand, createSetpointCommand, DomainError, normalizeDevice, type SdmCommand, type SdmDevice, type TemperatureScale } from "./domain.js";
 import { UpstreamError } from "./google.js";
 import { UnlockLimiter } from "./rate-limit.js";
 import { issueSession, verifyAccessCode, verifySession } from "./session.js";
@@ -98,6 +98,14 @@ export function createApp(dependencies: AppDependencies): express.Express {
         ? createSetpointCommand(value.mode, { heat: value.heat, cool: value.cool }, { ...dependencies.bounds, scale: dependencies.scale })
         : createSetpointCommand(value.mode, { target: value.target }, { ...dependencies.bounds, scale: dependencies.scale });
       await dependencies.client.execute(command);
+      res.json({ accepted: true, state: await getState() });
+    } catch (error) { next(error); }
+  });
+
+  app.post("/v1/thermostat/fan", authorize, async (req, res, next) => {
+    try {
+      const value = z.object({ minutes: z.number().int().min(0).max(720) }).strict().parse(req.body);
+      await dependencies.client.execute(createFanTimerCommand(value.minutes));
       res.json({ accepted: true, state: await getState() });
     } catch (error) { next(error); }
   });

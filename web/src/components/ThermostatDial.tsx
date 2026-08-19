@@ -9,9 +9,9 @@ export function ThermostatDial({ target, ambient, scale, pending, disabled, onAd
       </div>
     </div>
     <div class="stepper">
-      <button class="temperature-step" aria-label="Lower target temperature" disabled={disabled || pending} onClick={() => onAdjust(-1)}>−</button>
+      <button class="temperature-step" aria-label="Lower target temperature" disabled={disabled} onClick={() => onAdjust(-1)}>−</button>
       <span class="scale-mark" aria-hidden="true">°{scale}</span>
-      <button class="temperature-step" aria-label="Raise target temperature" disabled={disabled || pending} onClick={() => onAdjust(1)}>+</button>
+      <button class="temperature-step" aria-label="Raise target temperature" disabled={disabled} onClick={() => onAdjust(1)}>+</button>
     </div>
   </section>;
 }
