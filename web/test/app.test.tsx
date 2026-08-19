@@ -12,7 +12,7 @@ const state: ThermostatState = {
 
 describe("App", () => {
   it("unlocks before revealing thermostat controls", async () => {
-    const api = { unlock: vi.fn().mockResolvedValue(undefined), getState: vi.fn().mockResolvedValue(state), setSetpoint: vi.fn(), setMode: vi.fn() };
+    const api = { unlock: vi.fn().mockResolvedValue(undefined), signOut: vi.fn(), getState: vi.fn().mockResolvedValue(state), setSetpoint: vi.fn(), setMode: vi.fn() };
     render(<App api={api} initiallyUnlocked={false} />);
     expect(screen.getByRole("heading", { name: "Your home, one turn away." })).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Shared access code"), "nest-4829");
@@ -22,10 +22,21 @@ describe("App", () => {
   });
 
   it("labels live HVAC state and exposes large temperature controls", async () => {
-    const api = { unlock: vi.fn(), getState: vi.fn().mockResolvedValue(state), setSetpoint: vi.fn(), setMode: vi.fn() };
+    const api = { unlock: vi.fn(), signOut: vi.fn(), getState: vi.fn().mockResolvedValue(state), setSetpoint: vi.fn(), setMode: vi.fn() };
     render(<App api={api} initiallyUnlocked />);
     expect(await screen.findByText("Heating to 72°")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lower target temperature" })).toHaveClass("temperature-step");
     expect(screen.getByRole("button", { name: "Raise target temperature" })).toHaveClass("temperature-step");
+  });
+
+  it("shows state-loading errors and lets an expired session unlock again", async () => {
+    const api = { unlock: vi.fn(), signOut: vi.fn(), getState: vi.fn().mockRejectedValue(new Error("The configured thermostat is unavailable.")), setSetpoint: vi.fn(), setMode: vi.fn() };
+    render(<App api={api} initiallyUnlocked />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The configured thermostat is unavailable.");
+    await userEvent.click(screen.getByRole("button", { name: "Unlock again" }));
+
+    expect(api.signOut).toHaveBeenCalledOnce();
+    expect(screen.getByRole("heading", { name: "Your home, one turn away." })).toBeInTheDocument();
   });
 });

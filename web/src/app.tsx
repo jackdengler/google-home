@@ -4,7 +4,7 @@ import { StatusPanel } from "./components/StatusPanel.js";
 import { ThermostatDial } from "./components/ThermostatDial.js";
 import { createThermostatController, type ControllerSnapshot, type ThermostatCommands, type ThermostatState } from "./thermostat.js";
 
-interface AppApi extends ThermostatCommands { unlock(code: string): Promise<void>; getState(): Promise<ThermostatState> }
+interface AppApi extends ThermostatCommands { unlock(code: string): Promise<void>; signOut(): void; getState(): Promise<ThermostatState> }
 export function App({ api, initiallyUnlocked }: { api: AppApi; initiallyUnlocked: boolean }) {
   const [unlocked, setUnlocked] = useState(initiallyUnlocked);
   const [code, setCode] = useState("");
@@ -18,6 +18,7 @@ export function App({ api, initiallyUnlocked }: { api: AppApi; initiallyUnlocked
   useEffect(() => { if (!controller) return; setSnapshot(controller.snapshot()); return controller.subscribe(setSnapshot); }, [controller]);
 
   if (!unlocked) return <main class="unlock-shell"><section class="unlock-card"><p class="eyebrow">NEST / PRIVATE CONTROL</p><h1>Your home,<br />one turn away.</h1><p>Enter the shared code once. This phone will stay connected for 30 days.</p><form onSubmit={(event) => { event.preventDefault(); setUnlockError(null); api.unlock(code).then(() => setUnlocked(true)).catch((error) => setUnlockError(error instanceof Error ? error.message : "The code was not accepted.")); }}><label>Shared access code<input aria-label="Shared access code" type="password" minLength={8} value={code} onInput={(event) => setCode(event.currentTarget.value)} autoComplete="current-password" /></label><button type="submit">Unlock thermostat</button></form>{unlockError && <p role="alert" class="error-banner">{unlockError}</p>}</section></main>;
+  if (!loading && !state && unlockError) return <main class="unlock-shell"><section class="unlock-card"><p class="eyebrow">NEST / CONNECTION ERROR</p><h1>Couldn’t read<br />the room.</h1><p role="alert" class="error-banner">{unlockError}</p><button type="button" onClick={() => { api.signOut(); setUnlockError(null); setUnlocked(false); }}>Unlock again</button></section></main>;
   if (loading || !snapshot || !controller) return <main class="loading-shell"><div class="loading-ring" /><p>Reading the room…</p></main>;
 
   const theme = snapshot.confirmed.hvacStatus === "HEATING" ? "heat" : snapshot.confirmed.hvacStatus === "COOLING" ? "cool" : "idle";
