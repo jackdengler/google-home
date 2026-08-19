@@ -36,6 +36,7 @@ export class ThermostatApi implements ThermostatCommands {
   }
 
   private async request<T>(path: string, init: RequestInit = {}, authenticated = true): Promise<T> {
+    if (!this.baseUrl) throw new ApiError("SETUP_REQUIRED", "The private Google Cloud bridge has not been configured yet.");
     const headers = new Headers(init.headers); headers.set("content-type", "application/json");
     if (authenticated) { const token = this.storage.getItem(SESSION_KEY); if (token) headers.set("authorization", `Bearer ${token}`); }
     const response = await fetch(`${this.baseUrl}${path}`, { ...init, headers, cache: "no-store" });

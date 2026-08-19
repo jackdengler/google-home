@@ -2,7 +2,7 @@
   "name": "@google-home/function",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "functions-framework --target=api --source=dist",

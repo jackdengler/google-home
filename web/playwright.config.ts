@@ -7,7 +7,7 @@ export default defineConfig({
   reporter: "list",
   use: { ...devices["iPhone 13"], browserName: "chromium", baseURL: "http://127.0.0.1:4173/google-home/", serviceWorkers: "allow" },
   webServer: {
-    command: "npm run build && npm run preview -- --host 127.0.0.1",
+    command: "VITE_API_BASE_URL=https://api.example.test npm run build && npm run preview -- --host 127.0.0.1",
     port: 4173,
     reuseExistingServer: false,
   },

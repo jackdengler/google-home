@@ -5,6 +5,7 @@
   "workspaces": ["function", "web"],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "e2e": "npm run e2e -w web",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "verify": "npm run typecheck && npm test && npm run build"
