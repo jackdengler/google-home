@@ -1,0 +1,54 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "function/**"
+      - ".github/workflows/deploy-function.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: budget-together-491405
+          workload_identity_provider: projects/862279562724/locations/global/workloadIdentityPools/github/providers/google-home
+          service_account: github-deployer@budget-together-491405.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Deploy Cloud Run function
+        run: |
+          gcloud functions deploy nest-thermostat-api \
+            --project=budget-together-491405 \
+            --gen2 \
+            --runtime=nodejs22 \
+            --region=us-west1 \
+            --source=function \
+            --entry-point=api \
+            --trigger-http \
+            --allow-unauthenticated \
+            --quiet
+
+      - name: Verify health endpoint
+        run: |
+          function_url="$(gcloud functions describe nest-thermostat-api \
+            --project=budget-together-491405 \
+            --gen2 \
+            --region=us-west1 \
+            --format='value(url)')"
+          curl --fail --silent --show-error "$function_url/healthz"

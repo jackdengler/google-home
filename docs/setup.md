@@ -107,6 +107,18 @@ curl -sS "$FUNCTION_URL/healthz"
 
 Expected response: `{"ok":true}`.
 
+### Optional: automate future backend deployments
+
+After the first manual deployment, run the repository's idempotent setup script once in Google Cloud Shell:
+
+```bash
+cd ~/google-home
+git pull
+bash scripts/setup-github-deploy.sh
+```
+
+This configures keyless Workload Identity Federation for only the `jackdengler/google-home` repository's `main` branch. Future backend changes pushed to `main` deploy through the **Deploy Backend** GitHub Actions workflow. Existing function environment variables and Secret Manager bindings are preserved.
+
 ## 5. Connect GitHub Pages
 
 Set the public function URL as a repository variable. It is not a credential.
